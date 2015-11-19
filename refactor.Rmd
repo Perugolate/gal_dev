@@ -3,8 +3,11 @@
 - [Dependencies](#dependencies)
 - [Read data](#read-data)
 - [Fit model and extract results](#fit-model-and-extract-results)
+ * [Check GALME gene](#check-galme-gene)
+ * [Perform contrasts](#perform-contrasts)
 
 # Dependencies
+
 ```{r}
 library("DESeq2")
 library("magrittr")
@@ -13,6 +16,7 @@ register(MulticoreParam(12)) # use 12 cores.
 ```
 
 # Read data
+
 ```{r}
 # Remove library 34 which was contaminated with a yeast library with the same index.
 countData <- read.table("matrix.counts.matrix4", header=TRUE)[,-15] %>% round
@@ -27,19 +31,22 @@ colData$batch <- readLines("batch") %>% as.factor
 ```
 
 # Fit model and extract results
+
 ```{r}
 dds <- DESeqDataSetFromMatrix(countData = countData, colData = colData, design = ~ stage + batch)
 dds <- DESeq(dds, test="LRT", full = ~ stage + batch, reduced = ~ batch, parallel=TRUE, fitType="local")
 res <- results(dds, alpha=0.05, tidy=TRUE)
 ```
+## Check GALME gene
 
-Check that the lysozyme GALME (Swiss-Prot accession P82174) has not been excluded. There seems to be a batch effect for early stages that can cause it to be excluded when batch is not fitted.
+Check that *p* values for lysozyme GALME gene (Swiss-Prot accession P82174) have not been set to NA. There seems to be a batch effect for early stages that can cause it to be excluded when batch is not fitted.
 ```{r}
 edata <- dds@rowData@elementMetadata %>% as.data.frame # get the dispersion outlier data.
 rownames(edata) <- rownames(countData)
 subset(edata, rownames(edata) %in% "c86535_g1") # check P82174 is dispersion outlier.
 subset(res, row=="c86535_g1") # check if p value for P82174 is set to NA.
 ```
+## Perform contrasts
 
 List IDs of genes which change at least 2-fold from all possible contrasts.
 ```{r}
