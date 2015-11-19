@@ -1,4 +1,8 @@
-LRT between `~ batch`, and `~ stage + batch` has c86535_g1 as DE. Dropping `batch` leads to pvalues for c86535_g1 being set to NA. So I'll keep batch as an effect.
+# Table of contents
+
+- [Dependencies](#dependencies)
+- [Read data](#read-data)
+- [Fit model and extract results](#fit-model-and-extract-results)
 
 # Dependencies
 ```{r}
