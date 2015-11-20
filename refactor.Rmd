@@ -19,7 +19,7 @@ register(MulticoreParam(12)) # use 12 cores.
 
 ```{r}
 # Remove library 34 which was contaminated with a yeast library with the same index.
-countData <- read.table("matrix.counts.matrix4", header=TRUE)[,-15] %>% round
+countData <- read.table(gzfile("gene_counts.tsv.gz"), header=TRUE)[,-15] %>% round
 # Read in sample descriptions and remove library 34 metadata.
 colData <- read.table("meta", header=FALSE)[-15,]
 # Create a factor "stage" with one level for each of six developmental stages.
