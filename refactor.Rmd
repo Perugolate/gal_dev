@@ -5,6 +5,7 @@
 - [Fit model and extract results](#fit-model-and-extract-results)
  * [Check GALME gene](#check-galme-gene)
  * [Perform contrasts](#perform-contrasts)
+ * [Subset LRT results using contrast results](#subset-lrt-results-using-contrast-results)
 
 # Dependencies
 
@@ -56,8 +57,19 @@ resSig <- subset(res, padj < 0.05)
 contr <- combn(unique(as.character(colData$stage)), 2) %>% as.data.frame(stringsAsFactors=FALSE)
 # Take the ids of genes with absolute(log2FoldChanges) > 1 from all possible contrasts.
 foldchanges <- lapply(names(contr), function(x) {
-results(dds, parallel=TRUE, contrast=c("stage",contr[,x])) %>% subset(abs(log2FoldChange)>1) %>% rownames
+results(dds, alpha=0.05, parallel=TRUE, contrast=c("stage",contr[,x])) %>% subset(abs(log2FoldChange)>1) %>% rownames
 })
 # Concatenate and deduplicate the gene names.
 foldchangesN <- unlist(foldchanges) %>% unique
 ```
+
+## Subset LRT results using contrast results
+
+Use ids to find genes which are significant in the LRT test:
+```{r}
+# Use the gene names to pull out the significant genes from the LRT.
+# This gives the ids of the genes which have an absolute(log2FoldChanges) > 1 & padj <= 0.05.
+resLfc <- subset(resSig, row %in% foldchangesN)
+```
+
+
