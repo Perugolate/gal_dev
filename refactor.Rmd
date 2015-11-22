@@ -6,12 +6,22 @@
  * [Check GALME gene](#check-galme-gene)
  * [Perform contrasts](#perform-contrasts)
  * [Subset LRT results using contrast results](#subset-lrt-results-using-contrast-results)
+- [Some visualisations](#some-visualisations)
+ * [DE gene heatmap](#de-gene-heatmap)
+ * [Sample-to-sample heatmap](#sample-to-sample-heatmap)
+ * [Munge variance-stabilized results for clustering](#munge-variance-stabilized-results-for-clustering)
+ * [Cluster in python with sklearn](#cluster-in-python-with-sklearn)
 
 # Dependencies
 
 ```{r}
 library("DESeq2")
 library("magrittr")
+library("RColorBrewer")
+library("gplots")
+library("cowplot")
+library("tidyr")
+library("dplyr")
 library("BiocParallel")
 register(MulticoreParam(12)) # use 12 cores.
 ```
@@ -72,4 +82,89 @@ Use ids to find genes which are significant in the LRT test:
 resLfc <- subset(resSig, row %in% foldchangesN)
 ```
 
+# Some visualisations
 
+Stabilize variance for clustering and PCA.
+```{r}
+rld <- rlogTransformation(dds, blind=F)
+# reorder factor levels for PCA plot legend
+rld@colData@listData$stage <- factor(rld@colData@listData$stage, levels(rld@colData@listData$stage)[c(1,6,5,2,4,3)]) # warning indexing by location
+
+```
+
+## DE gene heatmap
+
+```{r}
+# Note by default plotPCA uses top 500 by row variance, so give it everything instead.
+plotPCA(rld, ntop=nrow(rld), intgroup="stage")
+rldMat <- assay(rld)
+distsRL <- dist(t(rldMat))
+hc <- hclust(distsRL, method='mcquitty')
+# Take the transformed data for genes which are DE.
+res_rld <- subset(rldMat, rownames(rldMat) %in% resLfc$row)
+res_rldHm <- res_rld # seperate object for heatmap since colnames cause problems later.
+colnames(res_rldHm) <- colData$stage
+hmcol <- colorRampPalette(brewer.pal(9, "GnBu"))(100)
+# This is very slow when Rowv=TRUE.
+heatmap.2(res_rldHm, col=hmcol, Rowv=TRUE, Colv=as.dendrogram(hc), scale="none", dendrogram="both", trace="none", labRow=FALSE, key=TRUE)
+```
+
+## Sample-to-sample heatmap
+
+```{r}
+mat <- as.matrix(distsRL)
+rownames(mat) <- colnames(mat) <- colData$stage
+heatmap.2(mat, Rowv=as.dendrogram(hc), symm=TRUE, trace="none", col = rev(hmcol), margin=c(8, 8))
+```
+
+## Munge variance-stabilized results for clustering
+
+```{r}
+res_rld <- as.data.frame(res_rld)
+res_rld$gene <- rownames(res_rld)
+# Add stage information to transformed data.
+colnames(res_rld) <- c(paste(colData[,1] , colData$stage, sep="_"), "gene")
+# Reshape into long format.
+rsvt <- gather(res_rld, stage, expression, -gene)
+rsvt$stage <- as.character(rsvt$stage)
+rsvt <- separate(rsvt, stage, c("sample", "stage"))
+by_genExp <- group_by(rsvt, gene, stage)
+# don't use devExp itself so will replace with a large chain
+devExpCl <- summarize(by_genExp, exp=mean(expression), sd=sd(expression))
+devExpCw <- select(devExpCl, gene, stage, exp) %>% spread(stage, exp) %>%
+	select(gene, one, two, three, five, six, seven)
+# nrow(res_rld)*6 == nrow(devExp) == nrow(devExpCw)*6
+rownames(devExpCw) <- devExpCw$gene
+```
+
+Write out for clustering in `python` with `scikit-learn` while dropping gene.
+```{r}
+write.table(select(devExpCw, -gene), file="genes", quote=FALSE, row.names=FALSE, sep=",")
+```
+
+## Cluster in python with sklearn
+```{python}
+import numpy as np
+from sklearn import mixture
+
+# Load data without the headers.
+foo = np.loadtxt(open("genes", "r"), delimiter=",", skiprows=1)
+
+n_components=40 # an upper bound for no. of components.
+lowest_bic = np.infty
+bic = []
+cv_types = ['spherical', 'tied', 'diag', 'full']
+for cv_type in cv_types:
+    # Fit a Dirichlet process mixture of Gaussians.
+    dpgmm = mixture.DPGMM(n_components=n_components, covariance_type=cv_type)
+    dpgmm.fit(foo)
+    bic.append(dpgmm.bic(foo))
+    if bic[-1] < lowest_bic:
+        lowest_bic = bic[-1]
+        best_dpgmm = dpgmm
+
+# Predict the labels for the model with lowest BIC.
+labels = best_dpgmm.predict(foo)
+# Write the labels out for use in R.
+np.savetxt("labels", labels, fmt="%s")
+```
