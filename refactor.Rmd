@@ -32,6 +32,7 @@ register(MulticoreParam(12)) # use 12 cores.
 ```{r}
 # Remove library 34 which was contaminated with a yeast library with the same index.
 countData <- read.table(gzfile("gene_counts.tsv.gz"), header=TRUE)[,-15] %>% round
+# Note, chose not to implement rowSums filter because it eliminates less than 10% rows.
 # Read in sample descriptions and remove library 34 metadata.
 colData <- read.table("meta", header=FALSE)[-15,]
 # Create a factor "stage" with one level for each of six developmental stages.
@@ -68,10 +69,19 @@ resSig <- subset(res, padj < 0.05)
 contr <- combn(unique(as.character(colData$stage)), 2) %>% as.data.frame(stringsAsFactors=FALSE)
 # Take the ids of genes with absolute(log2FoldChanges) > 1 from all possible contrasts.
 foldchanges <- lapply(names(contr), function(x) {
-results(dds, alpha=0.05, parallel=TRUE, contrast=c("stage",contr[,x])) %>% subset(abs(log2FoldChange)>1) %>% rownames
+    results(dds, alpha=0.05, parallel=TRUE, contrast=c("stage",contr[,x])) %>% subset(abs(log2FoldChange)>1) %>% rownames
 })
 # Concatenate and deduplicate the gene names.
 foldchangesN <- unlist(foldchanges) %>% unique
+```
+
+## TESTING cluster log2FoldChanges from contrasts with first timepoint
+
+```{r}
+contr1 <- t(contr) %>% subset(.[,1]=="one") %>% t %>% as.data.frame(stringsAsFactors=FALSE)
+# fix formatting/lines, rename call etc.
+l2fChanges <- lapply(names(contr1), function(x) {results(dds, alpha=0.05, contrast=c("stage", contr1[,x]), tidy=TRUE) %>% select(row, log2FoldChange)})
+names (l2fChanges) <- lapply(names(contr1), function(x) {paste(contr1[,x], collapse="_vs_")})
 ```
 
 ## Subset LRT results using contrast results
