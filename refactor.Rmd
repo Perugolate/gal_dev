@@ -75,15 +75,6 @@ foldchanges <- lapply(names(contr), function(x) {
 foldchangesN <- unlist(foldchanges) %>% unique
 ```
 
-## TESTING cluster log2FoldChanges from contrasts with first timepoint
-
-```{r}
-contr1 <- t(contr) %>% subset(.[,1]=="one") %>% t %>% as.data.frame(stringsAsFactors=FALSE)
-# fix formatting/lines, rename call etc.
-l2fChanges <- lapply(names(contr1), function(x) {results(dds, alpha=0.05, contrast=c("stage", contr1[,x]), tidy=TRUE) %>% select(row, log2FoldChange)})
-names (l2fChanges) <- lapply(names(contr1), function(x) {paste(contr1[,x], collapse="_vs_")})
-```
-
 ## Subset LRT results using contrast results
 
 Use ids to find genes which are significant in the LRT test:
@@ -192,5 +183,66 @@ devExpCl2 <- gather(devExpCw, stage, expression, -gene, -cluster) %>%
 # Plot cluster means
 ggplot(devExpCl2, aes(x=stage, y=exp, group=cluster)) + geom_line() + facet_wrap(~cluster, ncol=5, scales="free_y") + ylab("Expression") + xlab("Stage") + ggtitle("Gene expression across larval-pupal moult") + geom_ribbon(aes(ymin=exp-sd, ymax=exp+sd), alpha=0.2)
 # Plot each gene by cluster
+```
+
+## TESTING cluster log2FoldChanges from contrasts with first timepoint
+
+This is a mess and needs attention.
+
+```{r}
+# create data frame of contrasts between stage one and the others.
+contr1 <- t(contr) %>% subset(.[,1]=="one") %>% t %>% as.data.frame(stringsAsFactors=FALSE)
+# fix formatting/lines, rename call etc.
+l2fChanges <- lapply(names(contr1), function(x) {results(dds, alpha=0.05, contrast=c("stage", contr1[,x]), tidy=TRUE) %>% select(row, log2FoldChange)})
+# rename list elements to reflect contrast performed.
+names (l2fChanges) <- lapply(names(contr1), function(x) {paste(contr1[,x], collapse="_vs_")}) %>% unlist
+# create vector of contrast names for renaming l2fc columns.
+contr2 <- lapply(names(contr1), function(x) {paste("l2fc", paste(contr1[,x], collapse="_vs_"), sep="_")}) %>% unlist
+# rename l2fc columns in each list element.
+for (i in seq_along(l2fChanges)) {
+    names(l2fChanges[[i]]) <- c("row", contr2[i])
+}
+# merge all of the data frames in the list by gene name ("row").
+resChanges <- Reduce(function(x, y) {merge(x, y, all=TRUE, by="row")}, l2fChanges)
+# subset significant changes. Note for now this depends on the code chunks below but this could be refactored to include the lfc filter within the results calls on L84 but remember to modify the Reduce call with all=FALSE
+resChangeLfc <- subset(resChanges, row %in% resLfc$row)
+# write out for clustering.
+write.table(select(resChangeLfc, -row), file="genes2", quote=FALSE, row.names=FALSE, sep=",")
+```
+Fit Dirichlet process mixture of Gaussians.
+
+```{python}
+    import numpy as np
+    from sklearn import mixture
+
+    # Load data without the headers.
+    foo = np.loadtxt(open("genes2", "r"), delimiter=",", skiprows=1)
+
+    n_components=40 # an upper bound for no. of components.
+    lowest_bic = np.infty
+    bic = []
+    cv_types = ['spherical', 'tied', 'diag', 'full']
+    for cv_type in cv_types:
+        # Fit a Dirichlet process mixture of Gaussians.
+        dpgmm = mixture.DPGMM(n_components=n_components, covariance_type=cv_type)
+        dpgmm.fit(foo)
+        bic.append(dpgmm.bic(foo))
+        if bic[-1] < lowest_bic:
+            lowest_bic = bic[-1]
+            best_dpgmm = dpgmm
+
+    # Predict the labels for the model with lowest BIC.
+    labels = best_dpgmm.predict(foo)
+    # Write the labels out for use in R.
+    np.savetxt("labels2", labels, fmt="%s")
+```
+
+Read in labels, tidy, and plot by cluster.
+
+```{r}
+resChangeLfcL <- gather(resChangeLfc, stage, expression, -row, -cluster) %>% 
+	group_by(cluster, stage) %>%
+	summarize(exp=mean(expression), sd=sd(expression))
+ggplot(resChangeLfcL, aes(x=stage, y=exp, group=cluster)) + geom_line() + facet_wrap(~cluster, ncol=5, scales="free_y") + ylab("Expression") + xlab("Stage") + ggtitle("Gene expression across larval-pupal moult") + geom_ribbon(aes(ymin=exp-sd, ymax=exp+sd), alpha=0.2)
 ```
 
