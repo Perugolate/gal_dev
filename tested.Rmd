@@ -134,6 +134,12 @@ Pl <- gather(P, loading, pc, -gene)
 L <- A[["factor.loading"]]
 Q <- A[["q.value"]]
 colnames(Q) <- c("gene", paste("q_PC", c(1:43), sep="_"))
+Ql <- gather(Q, pc, q, -gene)
+# looks like 4 PCs from scree plot
+qpc1_4 <- subset(Ql, pc=="q_PC_1" | pc=="q_PC_2" | pc=="q_PC_3" | pc=="q_PC_4") %>% filter(q < 0.05)
+# how many genes do not have a significant loading on the first 4 PCs
+nrow(res_rld) - unique(qpc1_4$gene) %>% length # not many
+# see how many PCs are needed to get all genes
 
 ```
 
