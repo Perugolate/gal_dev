@@ -123,4 +123,17 @@ ggplot(devExpCl3, aes(x=stage, y=exp, group=cluster)) + geom_line() + facet_wrap
 
 hmm, there are only two even clusters... sweeping by rowMeans lead to 16 clusters but with the majority of genes assigned to a single cluster.
 
+Determine significantly loading genes from PCA.
+```{r}
+library(mseapca)
+D <- data.frame(rownames(res_rld), select(res_rld, -gene))
+A <- pca_scaled(D)
+P <- A[["p.value"]]
+colnames(P) <- c("gene", paste("PC", c(1:43), sep="_"))
+Pl <- gather(P, loading, pc, -gene)
+L <- A[["factor.loading"]]
+Q <- A[["q.value"]]
+colnames(Q) <- c("gene", paste("q_PC", c(1:43), sep="_"))
+
+```
 
