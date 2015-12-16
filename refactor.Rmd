@@ -26,6 +26,7 @@ library("tidyr")
 library("dplyr")
 library("BiocParallel")
 library("plotrix")
+library("mseapca")
 register(MulticoreParam(12)) # use 12 cores.
 ```
 
@@ -202,5 +203,35 @@ pca2sum <- select(pca2x, PC1, PC2, PC3, PC4, stage) %>%
     group_by(PC, stage) %>%
     summarize(val=mean(value), ci=std.error(value)*1.96)
 ggplot(pca2sum, aes(x=stage, y=val, group=PC)) + geom_line() + facet_wrap(~PC, ncol=5, scales="free_y") + ylab("Expression") + xlab("Stage") + ggtitle("Gene expression across larval-pupal moult") + geom_ribbon(aes(ymin=val-ci, ymax=val+ci), alpha=0.2)
+```
+
+Determine significantly loading genes.
+```{r}
+D <- data.frame(rownames(res_rld), select(res_rld, -gene))
+A <- pca_scaled(D)
+L <- A[["factor.loading"]]
+colnames(L) <- c("gene", paste("PC", c(1:43), sep=""))
+Ll <- gather(L, pc, loading, -gene)
+Q <- A[["q.value"]]
+colnames(Q) <- c("gene", paste("PC", c(1:43), sep=""))
+Ql <- gather(Q, pc, q, -gene)
+QLl <- merge(Ql, Ll, by=c("gene", "pc"), all=TRUE)
+sqll <- filter(QLl, q < 0.05)
+# for each gene keep the highest (absolute) loading which is significant.
+rsqll <- filter(sqll, q < 0.05) %>% group_by(gene) %>% filter(rev(rank(abs(loading)))==1)
+# add column describing cluster.
+rsqll$sign <- sign(rsqll$loading)
+rsqll$sign <- gsub("-1", "negative", rsqll$sign)
+rsqll$sign <- gsub("1", "positive", rsqll$sign)
+rsqll$cluster <- paste(rsqll$pc, rsqll$sign, sep="_")
+# subset the rlogged counts and combine with pca data.
+wExp <- subset(devExpCw, devExpCw$gene %in% rsqll$gene)
+wExpPca <- merge(select(wExp, -cluster), rsqll, by="gene")
+# plot mean expression stage for each cluster.
+select(wExpPca, -pc, -loading, -aloading, -sign, -q) %>% gather(stage, expression, -gene, -cluster) %>% 
+    group_by(cluster, stage) %>% summarize(exp=mean(expression), ci=std.error(expression)*1.96) %>%
+    ggplot(aes(x=stage, y=exp, group=cluster)) + geom_line() +
+    facet_wrap(~cluster, ncol=6, scales="free_y") + 
+    geom_ribbon(aes(ymin=exp-ci, ymax=exp+ci), alpha=0.2)
 ```
 
