@@ -93,8 +93,7 @@ Stabilize variance for clustering and PCA.
 ```{r}
 rld <- rlogTransformation(dds, blind=F)
 # reorder factor levels for PCA plot legend
-rld@colData@listData$stage <- factor(rld@colData@listData$stage, levels(rld@colData@listData$stage)[c(1,6,5,2,4,3)]) # warning indexing by location
-
+rld@colData@listData$stage <- factor(rld@colData@listData$stage, levels=c("one", "two", "three", "five", "six", "seven"))
 ```
 
 ## DE gene heatmap
