@@ -27,6 +27,7 @@ library("dplyr")
 library("BiocParallel")
 library("plotrix")
 library("mseapca")
+library("readr")
 register(MulticoreParam(12)) # use 12 cores.
 ```
 
@@ -34,10 +35,12 @@ register(MulticoreParam(12)) # use 12 cores.
 
 ```{r}
 # Remove library 34 which was contaminated with a yeast library with the same index.
-countData <- read.table(gzfile("gene_counts.tsv.gz"), header=TRUE) %>% select(-X34) %>% round
+countData <- read_tsv("gene_counts.tsv.gz", col_names=TRUE) %>% select(-X34)
+rownames(countData) <- countData$gene
+countData <- select(countData, -gene) %>% round
 # Note, chose not to implement rowSums filter because it eliminates less than 10% rows.
 # Read in sample descriptions and remove library 34 metadata.
-colData <- read.table("meta", header=FALSE) %>% filter(colData, V1 != "X34")
+colData <- read.table("meta", header=FALSE) %>% filter(V1 != "X34")
 # Create a factor "stage" with one level for each of six developmental stages.
 colnames(colData) <- c("", "stage")
 colData$stage <- as.factor(colData$stage)
