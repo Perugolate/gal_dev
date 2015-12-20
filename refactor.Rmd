@@ -40,10 +40,10 @@ rownames(countData) <- countData$gene
 countData <- select(countData, -gene) %>% round
 # Note, chose not to implement rowSums filter because it eliminates less than 10% rows.
 # Read in sample descriptions and remove library 34 metadata.
-colData <- read.table("meta", header=FALSE) %>% filter(V1 != "X34")
+colData <- read_tsv("meta", col_names=TRUE) %>% filter(sample != "X34")
 # Create a factor "stage" with one level for each of six developmental stages.
 colnames(colData) <- c("", "stage")
-colData$stage <- as.factor(colData$stage)
+colData$stage <- factor(colData$stage, levels=c("one", "two", "three", "five", "six", "seven"))
 # Re-level so that wandering stage ("one") is the base level.
 colData$stage <- relevel(colData$stage, ref="one")
 colData$batch <- readLines("batch") %>% as.factor
@@ -101,7 +101,7 @@ rld@colData@listData$stage <- factor(rld@colData@listData$stage, levels=c("one",
 
 ## DE gene heatmap
 
-Note `plotPCA` calls prcomp. Scaling makes no difference (I checked).
+Note `plotPCA` calls prcomp. Scaling makes no difference (I checked) since values are already scaled by the transformation.
 ```{r}
 # Note by default plotPCA uses top 500 by row variance, so give it everything instead.
 plotPCA(rld, ntop=nrow(rld), intgroup="stage")
