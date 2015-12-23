@@ -94,7 +94,9 @@ resLfc <- subset(resSig, row %in% foldchangesN)
 
 Stabilize variance for clustering and PCA.
 ```{r}
-rld <- rlogTransformation(dds, blind=FALSE)
+rld <- rlogTransformation(dds, blind=F)
+# reorder factor levels for PCA plot legend
+rld@colData@listData$stage <- factor(rld@colData@listData$stage, levels=c("one", "two", "three", "five", "six", "seven"))
 ```
 
 ## DE gene heatmap
