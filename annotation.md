@@ -94,3 +94,11 @@ for i in trin.[0-2][0-9]*; do sed "s/refseq_protein.00/refseq_protein.$i/g" trin
 for i in trin.[0-2][0-9]*; do sbatch $i; done
 ```
 
+# *Bombyx mori* orthologs
+
+## setup
+
+```sh
+wget ftp://ftp.ensemblgenomes.org/pub/metazoa/release-30/fasta/bombyx_mori/pep/Bombyx_mori.GCA_000151625.1.30.pep.all.fa.gz
+wget ftp://ftp.ensemblgenomes.org/pub/metazoa/release-30/fasta/bombyx_mori/ncrna/Bombyx_mori.GCA_000151625.1.30.ncrna.fa.gz
+```
