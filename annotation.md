@@ -99,6 +99,23 @@ for i in trin.[0-2][0-9]*; do sbatch $i; done
 ## setup
 
 ```sh
-wget ftp://ftp.ensemblgenomes.org/pub/metazoa/release-30/fasta/bombyx_mori/pep/Bombyx_mori.GCA_000151625.1.30.pep.all.fa.gz
+wget ftp://silkdb.org/pub/current/otherdata/Gene_ontology/silkworm_glean_gene.go
+wget ftp://silkdb.org/pub/current/Gene/Glean_genes/silkworm_glean_pep.fa.tar.gz
+tar xvf silkworm_glean_pep.fa.tar.gz
+makeblastdb -in silkpep.fa -dbtype prot
 wget ftp://ftp.ensemblgenomes.org/pub/metazoa/release-30/fasta/bombyx_mori/ncrna/Bombyx_mori.GCA_000151625.1.30.ncrna.fa.gz
+```
+
+## blastx *B. mori* proteome
+
+```sh
+#! /bin/bash
+#SBATCH --job-name=bmori_prot
+#SBATCH --mail-user=
+#SBATCH --mail-type=all
+#SBATCH --mem=1024
+#SBATCH --cpus-per-task=8
+#SBATCH --time=3-00:00:00
+cd /scratch/perugolate/gal_anno/
+blastx -query min1renormdiag.fasta -db /scratch/perugolate/gal_anno/silkpep.fa -num_threads 8 -evalue 1e-3 -max_target_seqs 1 -outfmt 6 -out bmori_prot.outfmt6
 ```
