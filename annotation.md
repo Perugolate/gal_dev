@@ -113,9 +113,21 @@ wget ftp://ftp.ensemblgenomes.org/pub/metazoa/release-30/fasta/bombyx_mori/ncrna
 #SBATCH --job-name=bmori_prot
 #SBATCH --mail-user=
 #SBATCH --mail-type=all
-#SBATCH --mem=1024
+#SBATCH --mem=3072
 #SBATCH --cpus-per-task=8
 #SBATCH --time=3-00:00:00
 cd /scratch/perugolate/gal_anno/
 blastx -query min1renormdiag.fasta -db /scratch/perugolate/gal_anno/silkpep.fa -num_threads 8 -evalue 1e-3 -max_target_seqs 1 -outfmt 6 -out bmori_prot.outfmt6
+```
+
+```sh
+#! /bin/bash
+#SBATCH --job-name=tbm_prot
+#SBATCH --mail-user=
+#SBATCH --mail-type=all
+#SBATCH --mem=3072
+#SBATCH --cpus-per-task=8
+#SBATCH --time=3-00:00:00
+cd /scratch/perugolate/gal_anno/
+tblastn -query silkpep.fa -db /scratch/perugolate/gal_anno/min1renormdiag.fasta -num_threads 8 -evalue 1e-3 -max_target_seqs 1 -outfmt 6 -out tbm_prot.outfmt6
 ```
