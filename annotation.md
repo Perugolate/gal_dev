@@ -131,3 +131,8 @@ blastx -query min1renormdiag.fasta -db /scratch/perugolate/gal_anno/silkpep.fa -
 cd /scratch/perugolate/gal_anno/
 tblastn -query silkpep.fa -db /scratch/perugolate/gal_anno/min1renormdiag.fasta -num_threads 8 -evalue 1e-3 -max_target_seqs 1 -outfmt 6 -out tbm_prot.outfmt6
 ```
+
+```sh
+crb-blast -q min1renormdiag.fasta -t silkpep.fa -e 1e-5 -h 12 -o annotation.tsv
+crb-blast -q min1renormdiag.fasta -t Bombyx_mori.GCA_000151625.1.30.ncrna.fa -e 1e-5 -h 12 -o ncrna.tsv
+```
