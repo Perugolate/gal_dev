@@ -90,9 +90,18 @@ blastx -query min1renormdiag.fasta -db /scratch/perugolate/db2/refseq_protein.00
 ```
 
 ```sh
-for i in trin.[0-2][0-9]*; do sed "s/refseq_protein.00/refseq_protein.$i/g" trin.00.sh > trin.$i.sh; done
+for i in {01..21}; do sed "s/refseq_protein.00/refseq_protein.$i/g" trin.00.sh > trin.$i.sh; done
 for i in trin.[0-2][0-9]*; do sbatch $i; done
 ```
+
+Hit RAM limit so split near problem seq and re-run
+```sh
+sed -n 315411,588978p min1renormdiag.fasta > min1renormdiag.2.fasta
+makeblastdb -in min1renormdiag.2.fasta -dbtype nucl
+for i in {01..21}; do sed "s/refseq_protein.00/refseq_protein.$i/g" trin.00.2.sh > trin.$i.2.sh; done
+for i in trin.[0-2][0-9]*.2.sh; do sbatch $i; done
+```
+
 
 # *Bombyx mori* orthologs
 
