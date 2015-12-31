@@ -34,16 +34,17 @@ register(MulticoreParam(12)) # use 12 cores.
 # Read data
 
 ```{r}
-# Remove library 34 which was contaminated with a yeast library with the same index.
+# Remove library 34 - contaminated with a yeast library with the same index.
 countData <- read_tsv("gene_counts.tsv.gz", col_names=TRUE) %>% select(-X34)
 rownames(countData) <- countData$gene
 countData <- select(countData, -gene) %>% round
-# Note, chose not to implement rowSums filter because it eliminates less than 10% rows.
+# No rowSums filter because it eliminates less than 10% rows.
 # Read in sample descriptions and remove library 34 metadata.
 colData <- read_tsv("meta", col_names=TRUE) %>% filter(sample != "X34")
 # Create a factor "stage" with one level for each of six developmental stages.
 colnames(colData) <- c("", "stage")
-colData$stage <- factor(colData$stage, levels=c("one", "two", "three", "five", "six", "seven"))
+colData$stage <- factor(colData$stage, levels=c("one", "two", "three", "five", 
+						"six", "seven"))
 # Re-level so that wandering stage ("one") is the base level.
 colData$stage <- relevel(colData$stage, ref="one")
 colData$batch <- readLines("batch") %>% as.factor
@@ -52,17 +53,20 @@ colData$batch <- readLines("batch") %>% as.factor
 # Fit model and extract results
 
 ```{r}
-dds <- DESeqDataSetFromMatrix(countData = countData, colData = colData, design = ~ stage + batch)
-dds <- DESeq(dds, test="LRT", full = ~ stage + batch, reduced = ~ batch, parallel=TRUE, fitType="local")
+dds <- DESeqDataSetFromMatrix(countData = countData, colData = colData, 
+			      design = ~ stage + batch)
+dds <- DESeq(dds, test="LRT", full = ~ stage + batch, reduced = ~ batch, 
+	     parallel=TRUE, fitType="local")
 res <- results(dds, alpha=0.05, tidy=TRUE)
 ```
 ## Check GALME gene
 
 Check that *p* values for lysozyme GALME gene (Swiss-Prot accession P82174) have not been set to NA. There seems to be a batch effect for early stages that can cause it to be excluded when batch is not fitted.
 ```{r}
-edata <- dds@rowData@elementMetadata %>% as.data.frame # get the dispersion outlier data.
+# Get the dispersion outlier data.
+edata <- dds@rowData@elementMetadata %>% as.data.frame 
 rownames(edata) <- rownames(countData)
-subset(edata, rownames(edata) %in% "c86535_g1") # check P82174 is dispersion outlier.
+subset(edata, rownames(edata) %in% "c86535_g1") # check P82174 is not outlier.
 subset(res, row=="c86535_g1") # check if p value for P82174 is set to NA.
 ```
 ## Perform contrasts
@@ -72,10 +76,12 @@ List IDs of genes which change at least 2-fold from all possible contrasts.
 # Get significant results from LRT test.
 resSig <- subset(res, padj < 0.05)
 # Create a data frame of all possible contrasts.
-contr <- combn(unique(as.character(colData$stage)), 2) %>% as.data.frame(stringsAsFactors=FALSE)
-# Take the ids of genes with absolute(log2FoldChanges) > 1 from all possible contrasts.
+contr <- combn(unique(as.character(colData$stage)), 2) %>% 
+  as.data.frame(stringsAsFactors=FALSE)
+# Take the ids of genes with absolute(log2FoldChanges) > 1 from all contrasts.
 foldchanges <- lapply(names(contr), function(x) {
-    results(dds, alpha=0.05, parallel=TRUE, contrast=c("stage",contr[,x])) %>% subset(abs(log2FoldChange)>1) %>% rownames
+  results(dds, alpha=0.05, parallel=TRUE, contrast=c("stage",contr[,x])) %>%
+  subset(abs(log2FoldChange)>1) %>% rownames
 })
 # Concatenate and deduplicate the gene names.
 foldchangesN <- unlist(foldchanges) %>% unique
@@ -86,7 +92,7 @@ foldchangesN <- unlist(foldchanges) %>% unique
 Use ids to find genes which are significant in the LRT test:
 ```{r}
 # Use the gene names to pull out the significant genes from the LRT.
-# This gives the ids of the genes which have an absolute(log2FoldChanges) > 1 & padj <= 0.05.
+# Gives genes which have an absolute(log2FoldChanges) > 1 & padj <= 0.05.
 resLfc <- subset(resSig, row %in% foldchangesN)
 ```
 
@@ -96,25 +102,30 @@ Stabilize variance for clustering and PCA.
 ```{r}
 rld <- rlogTransformation(dds, blind=F)
 # reorder factor levels for PCA plot legend
-rld@colData@listData$stage <- factor(rld@colData@listData$stage, levels=c("one", "two", "three", "five", "six", "seven"))
+rld@colData@listData$stage <- factor(rld@colData@listData$stage, 
+				     levels=c("one", "two", "three", "five", 
+					      "six", "seven"))
 ```
 
 ## DE gene heatmap
 
 Note `plotPCA` calls prcomp. Scaling makes no difference (I checked) since values are already scaled by the transformation.
 ```{r}
-# Note by default plotPCA uses top 500 by row variance, so give it everything instead.
+# Use all genes instead of top 500 by row variance.
 plotPCA(rld, ntop=nrow(rld), intgroup="stage")
 rldMat <- assay(rld)
 distsRL <- dist(t(rldMat))
 hc <- hclust(distsRL, method='mcquitty')
 # Take the transformed data for genes which are DE.
 res_rld <- subset(rldMat, rownames(rldMat) %in% resLfc$row)
-res_rldHm <- res_rld # seperate object for heatmap since colnames cause problems later.
+# Seperate object for heatmap since colnames cause problems later.
+res_rldHm <- res_rld 
 colnames(res_rldHm) <- colData$stage
 hmcol <- colorRampPalette(brewer.pal(9, "GnBu"))(100)
 # This is very slow when Rowv=TRUE.
-heatmap.2(res_rldHm, col=hmcol, Rowv=TRUE, Colv=as.dendrogram(hc), scale="none", dendrogram="both", trace="none", labRow=FALSE, key=TRUE)
+# Refactor with pheatmap
+heatmap.2(res_rldHm, col=hmcol, Rowv=TRUE, Colv=as.dendrogram(hc), scale="none",
+	  dendrogram="both", trace="none", labRow=FALSE, key=TRUE)
 ```
 
 ## Sample-to-sample heatmap
@@ -122,7 +133,8 @@ heatmap.2(res_rldHm, col=hmcol, Rowv=TRUE, Colv=as.dendrogram(hc), scale="none",
 ```{r}
 mat <- as.matrix(distsRL)
 rownames(mat) <- colnames(mat) <- colData$stage
-heatmap.2(mat, Rowv=as.dendrogram(hc), symm=TRUE, trace="none", col = rev(hmcol), margin=c(8, 8))
+heatmap.2(mat, Rowv=as.dendrogram(hc), symm=TRUE, trace="none", col=rev(hmcol),
+	  margin=c(8, 8))
 ```
 
 ## Munge variance-stabilized results for clustering
@@ -140,14 +152,15 @@ by_genExp <- group_by(rsvt, gene, stage)
 # don't use devExp itself so will replace with a large chain
 devExpCl <- summarize(by_genExp, exp=mean(expression), sd=sd(expression))
 devExpCw <- select(devExpCl, gene, stage, exp) %>% spread(stage, exp) %>%
-	select(gene, one, two, three, five, six, seven)
+  select(gene, one, two, three, five, six, seven)
 # nrow(res_rld)*6 == nrow(devExp) == nrow(devExpCw)*6
 rownames(devExpCw) <- devExpCw$gene
 ```
 
 Write out for clustering in `python` with `scikit-learn` while dropping gene.
 ```{r}
-write.table(select(devExpCw, -gene), file="genes", quote=FALSE, row.names=FALSE, sep=",")
+write.table(select(devExpCw, -gene), file="genes", quote=FALSE, row.names=FALSE,
+	    sep=",")
 ```
 
 ## Cluster in python with sklearn
@@ -184,10 +197,13 @@ np.savetxt("labels", labels, fmt="%s")
 devExpCw$cluster <- scan("labels", what="integer")
 # remove devExpCl above and replace with longer chain straight to devExpCw
 devExpCl2 <- gather(devExpCw, stage, expression, -gene, -cluster) %>% 
-	group_by(cluster, stage) %>%
-	summarize(exp=mean(expression), ci=std.error(expression)*1.96)
+  group_by(cluster, stage) %>%
+  summarize(exp=mean(expression), ci=std.error(expression)*1.96)
 # Plot cluster means
-ggplot(devExpCl2, aes(x=stage, y=exp, group=cluster)) + geom_line() + facet_wrap(~cluster, ncol=5, scales="free_y") + ylab("Expression") + xlab("Stage") + ggtitle("Gene expression across larval-pupal moult") + geom_ribbon(aes(ymin=exp-ci, ymax=exp+ci), alpha=0.2)
+ggplot(devExpCl2, aes(x=stage, y=exp, group=cluster)) + geom_line() + 
+	facet_wrap(~cluster, ncol=5, scales="free_y") + ylab("Expression") +
+	xlab("Stage") + ggtitle("Gene expression across larval-pupal moult") + 
+	geom_ribbon(aes(ymin=exp-ci, ymax=exp+ci), alpha=0.2)
 ```
 
 ## Plot PCs by stage
@@ -201,10 +217,13 @@ pca2x$stage <- rld@colData@listData$stage
 plot(pca2$sdev^2, type="b")
 # summarize and then plot each PC by stage
 pca2sum <- select(pca2x, PC1, PC2, PC3, PC4, stage) %>%
-    gather(PC, value, -stage) %>%
-    group_by(PC, stage) %>%
-    summarize(val=mean(value), ci=std.error(value)*1.96)
-ggplot(pca2sum, aes(x=stage, y=val, group=PC)) + geom_line() + facet_wrap(~PC, ncol=5, scales="free_y") + ylab("Expression") + xlab("Stage") + ggtitle("Gene expression across larval-pupal moult") + geom_ribbon(aes(ymin=val-ci, ymax=val+ci), alpha=0.2)
+  gather(PC, value, -stage) %>%
+  group_by(PC, stage) %>%
+  summarize(val=mean(value), ci=std.error(value)*1.96)
+ggplot(pca2sum, aes(x=stage, y=val, group=PC)) + geom_line() + 
+	facet_wrap(~PC, ncol=5, scales="free_y") + ylab("Expression") + 
+	xlab("Stage") + ggtitle("Gene expression across larval-pupal moult") + 
+	geom_ribbon(aes(ymin=val-ci, ymax=val+ci), alpha=0.2)
 ```
 
 Determine significantly loading genes.
@@ -220,7 +239,8 @@ Ql <- gather(Q, pc, q, -gene)
 QLl <- merge(Ql, Ll, by=c("gene", "pc"), all=TRUE)
 sqll <- filter(QLl, q < 0.05)
 # for each gene keep the highest (absolute) loading which is significant.
-rsqll <- filter(sqll, q < 0.05) %>% group_by(gene) %>% filter(rev(rank(abs(loading)))==1)
+rsqll <- filter(sqll, q < 0.05) %>% group_by(gene) %>% 
+  filter(rev(rank(abs(loading)))==1)
 # add column describing cluster.
 rsqll$sign <- sign(rsqll$loading)
 rsqll$sign <- gsub("-1", "negative", rsqll$sign)
@@ -230,10 +250,11 @@ rsqll$cluster <- paste(rsqll$pc, rsqll$sign, sep="_")
 wExp <- subset(devExpCw, devExpCw$gene %in% rsqll$gene)
 wExpPca <- merge(select(wExp, -cluster), rsqll, by="gene")
 # plot mean expression stage for each cluster.
-select(wExpPca, -pc, -loading, -aloading, -sign, -q) %>% gather(stage, expression, -gene, -cluster) %>% 
-    group_by(cluster, stage) %>% summarize(exp=mean(expression), ci=std.error(expression)*1.96) %>%
-    ggplot(aes(x=stage, y=exp, group=cluster)) + geom_line() +
-    facet_wrap(~cluster, ncol=6, scales="free_y") + 
-    geom_ribbon(aes(ymin=exp-ci, ymax=exp+ci), alpha=0.2)
+select(wExpPca, -pc, -loading, -aloading, -sign, -q) %>% 
+  gather(stage, expression, -gene, -cluster) %>% group_by(cluster, stage) %>% 
+  summarize(exp=mean(expression), ci=std.error(expression)*1.96) %>% 
+  ggplot(aes(x=stage, y=exp, group=cluster)) + geom_line() + 
+	  facet_wrap(~cluster, ncol=6, scales="free_y") + 
+	  geom_ribbon(aes(ymin=exp-ci, ymax=exp+ci), alpha=0.2)
 ```
 
