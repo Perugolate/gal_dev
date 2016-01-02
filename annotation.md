@@ -31,7 +31,7 @@ TransDecoder.LongOrfs -t min1renormdiag.fasta
 #SBATCH --mem=2048
 #SBATCH --time=4-00:00:00
 #SBATCH --cpus-per-task=8
-cd /scratch/perugolate/gal_anno/
+cd /scratch/$USER/gal_anno/
 # takes ~1.5 days
 blastx -query min1renormdiag.fasta -db uniprot_sprot.trinotate.pep -num_threads 8 -max_target_seqs 1 -outfmt 6 > blastx.uniprot.outfmt6
 ```
@@ -46,7 +46,7 @@ blastx -query min1renormdiag.fasta -db uniprot_sprot.trinotate.pep -num_threads 
 #SBATCH --mem=2048
 #SBATCH --time=4-00:00:00
 #SBATCH --cpus-per-task=8
-cd /scratch/perugolate/gal_anno/
+cd /scratch/$USER/gal_anno/
 # takes ~15 h
 hmmscan --cpu 8 --domtblout TrinotatePFAM.out Pfam-A.hmm longest_orfs.pep > pfam.log
 ```
@@ -61,9 +61,57 @@ hmmscan --cpu 8 --domtblout TrinotatePFAM.out Pfam-A.hmm longest_orfs.pep > pfam
 #SBATCH --mem=12288
 #SBATCH --time=7-00:00:00
 #SBATCH --cpus-per-task=12
-cd /scratch/perugolate/gal_anno/
+cd /scratch/$USER/gal_anno/
 blastx -query min1renormdiag.fasta -db uniprot_uniref90.trinotate.pep -num_threads 12 -max_target_seqs 1 -outfmt 6 > blastx.uniref.outfmt6
 ```
+
+### Time outs
+
+Timed out so chunked up remaining sequences from input fasta:
+```sh
+# chunk up remaining seqs according to last seq with a hit
+sed -n $(grep $(tail blastx.uniref.outfmt6 -n1 | cut -f1) min1renormdiag.fasta -n | cut -f1 -d ":"),588978p min1renormdiag.fasta > min1renormdiag.sp2.fasta
+# split into 20 chunks
+pyfasta split -n 20 min1renormdiag.sp2.fasta
+```
+
+```sh
+#! /bin/bash
+#SBATCH --job-name=uniref_blast
+#SBATCH --mail-type=all
+#SBATCH --mail-user=
+#SBATCH --mem=12288
+#SBATCH --time=1-00:00:00
+#SBATCH --cpus-per-task=12
+cd /scratch/$USER/gal_anno/
+blastx -query min1renormdiag.fasta -db uniprot_uniref90.trinotate.pep -num_threads 12 -max_target_seqs 1 -outfmt 6 > blastx.min1renormdiag.fasta.uniref.outfmt6
+```
+
+```sh
+# make/submit a job for each chunk fasta
+for i in *sp2.[0-9]*; do sed "s/min1renormdiag.fasta/$i/g" ur.sh > ur.$i.sh; done
+for i in ur.min*sh; do sbatch $i; done
+```
+
+Which also timed out, so reran the remaining parts of each chunk:
+```sh
+# Chop each chunk according to last seq to retrieve a hit
+for i in {01..11}; do 
+  awk "/$(tail -n1 blastx.min1renormdiag.sp2.${i}.fasta.uniref.outfmt6 | cut -f1)/{y=1}y" min1renormdiag.sp2.${i}.fasta > min1renormdiag.sp3.${i}.fasta
+done
+# renaming in job scripts
+for i in {01..11}; do 
+  sed 's/sp2/sp3/g' ur.min1renormdiag.sp2.$i.fasta.sh > ur.min1renormdiag.sp3.$i.fasta.sh
+done
+# increase the time limit, since the all timed out
+for i in ur.min1renormdiag.sp3.*.fasta.sh; do 
+  sed -i 's/1-00:00:00/2-12:00:00/g' $i
+done
+# submit them all
+for i in ur.min1renormdiag.sp3.*.fasta.sh; do sbatch $i; done
+```
+
+Note, the above only covers chunks 1-11 as there are running jobs - will need to do this for the rest of the running jobs (12-19) as they time out.
 
 # refseq annotation
 
@@ -85,8 +133,8 @@ update_blastdb.pl --decompress refseq_protein
 #SBATCH --mem=3072
 #SBATCH --cpus-per-task=12
 #SBATCH --time=5-00:00:00
-cd /scratch/perugolate/gal_anno/
-blastx -query min1renormdiag.fasta -db /scratch/perugolate/db2/refseq_protein.00 -num_threads 12 -evalue 1e-3 -max_target_seqs 1 -outfmt "6 qseqid sseqid pident length mismatch gapopen qstart qend sstart send stitle staxids sscinames evalue" -out Trinity.fasta.refseq_protein.00.outfmt6
+cd /scratch/$USER/gal_anno/
+blastx -query min1renormdiag.fasta -db /scratch/$USER/db2/refseq_protein.00 -num_threads 12 -evalue 1e-3 -max_target_seqs 1 -outfmt "6 qseqid sseqid pident length mismatch gapopen qstart qend sstart send stitle staxids sscinames evalue" -out Trinity.fasta.refseq_protein.00.outfmt6
 ```
 
 ```sh
@@ -125,8 +173,8 @@ wget ftp://ftp.ensemblgenomes.org/pub/metazoa/release-30/fasta/bombyx_mori/ncrna
 #SBATCH --mem=3072
 #SBATCH --cpus-per-task=8
 #SBATCH --time=3-00:00:00
-cd /scratch/perugolate/gal_anno/
-blastx -query min1renormdiag.fasta -db /scratch/perugolate/gal_anno/silkpep.fa -num_threads 8 -evalue 1e-3 -max_target_seqs 1 -outfmt 6 -out bmori_prot.outfmt6
+cd /scratch/$USER/gal_anno/
+blastx -query min1renormdiag.fasta -db /scratch/$USER/gal_anno/silkpep.fa -num_threads 8 -evalue 1e-3 -max_target_seqs 1 -outfmt 6 -out bmori_prot.outfmt6
 ```
 
 ```sh
@@ -137,8 +185,8 @@ blastx -query min1renormdiag.fasta -db /scratch/perugolate/gal_anno/silkpep.fa -
 #SBATCH --mem=3072
 #SBATCH --cpus-per-task=8
 #SBATCH --time=3-00:00:00
-cd /scratch/perugolate/gal_anno/
-tblastn -query silkpep.fa -db /scratch/perugolate/gal_anno/min1renormdiag.fasta -num_threads 8 -evalue 1e-3 -max_target_seqs 1 -outfmt 6 -out tbm_prot.outfmt6
+cd /scratch/$USER/gal_anno/
+tblastn -query silkpep.fa -db /scratch/$USER/gal_anno/min1renormdiag.fasta -num_threads 8 -evalue 1e-3 -max_target_seqs 1 -outfmt 6 -out tbm_prot.outfmt6
 ```
 
 ```sh
