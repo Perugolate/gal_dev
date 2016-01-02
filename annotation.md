@@ -111,7 +111,7 @@ done
 for i in ur.min1renormdiag.sp3.*.fasta.sh; do sbatch $i; done
 ```
 
-Note, the above only covers chunks 1-11 as there are running jobs - will need to do this for the rest of the running jobs (12-19) as they time out.
+Note, the above only covers chunks 1-11 as there are running jobs - will need to do this for the rest of the running jobs (12-19) as they time out. Also ...sp2.00... failed almost immediately for unknown reasons. Re-submitted it with longer time.
 
 # refseq annotation
 
