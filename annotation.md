@@ -96,11 +96,11 @@ for i in ur.min*sh; do sbatch $i; done
 Which also timed out, so reran the remaining parts of each chunk:
 ```sh
 # Chop each chunk according to last seq to retrieve a hit
-for i in {01..11}; do 
+for i in {01..19}; do 
   awk "/$(tail -n1 blastx.min1renormdiag.sp2.${i}.fasta.uniref.outfmt6 | cut -f1)/{y=1}y" min1renormdiag.sp2.${i}.fasta > min1renormdiag.sp3.${i}.fasta
 done
 # renaming in job scripts
-for i in {01..11}; do 
+for i in {01..19}; do 
   sed 's/sp2/sp3/g' ur.min1renormdiag.sp2.$i.fasta.sh > ur.min1renormdiag.sp3.$i.fasta.sh
 done
 # increase the time limit, since the all timed out
@@ -111,7 +111,7 @@ done
 for i in ur.min1renormdiag.sp3.*.fasta.sh; do sbatch $i; done
 ```
 
-Note, the above only covers chunks 1-11 as there are running jobs - will need to do this for the rest of the running jobs (12-19) as they time out. Also ...sp2.00... failed almost immediately for unknown reasons. Re-submitted it with longer time.
+Note, the above only covers chunks 1-19 - 00 failed node failed early on and is running separately.
 
 # refseq annotation
 
