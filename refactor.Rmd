@@ -258,3 +258,13 @@ select(wExpPca, -pc, -loading, -aloading, -sign, -q) %>%
 	  geom_ribbon(aes(ymin=exp-ci, ymax=exp+ci), alpha=0.2)
 ```
 
+## Contamination
+
+```{r}
+df1 <- readLines(pipe("grep Saccharomyces refseq/outfmt6.all.uniq | cut -f1-2 -d'_'"))
+sigSac <- subset(devExpCw, devExpCw$gene %in% df1)
+select(sigSac, -cluster) %>% gather(stage, exp, -gene) %>% group_by(stage) %>% 
+  summarize(expression=mean(exp)) %>% ggplot(aes(x=stage, y=expression)) + 
+  geom_point()
+```
+

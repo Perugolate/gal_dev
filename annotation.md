@@ -113,6 +113,10 @@ for i in ur.min1renormdiag.sp3.*.fasta.sh; do sbatch $i; done
 
 Note, the above only covers chunks 1-19 - 00 failed node failed early on and is running separately.
 
+```sh
+cat blastx.min1renormdiag.sp*outfmt6 >> blastx.uniref.outfmt6
+```
+
 ## Load results
 
 ```sh
@@ -122,10 +126,6 @@ Trinotate Trinotate.sqlite init --gene_trans_map min1renormdiag.fasta.gene_trans
 Trinotate Trinotate.sqlite LOAD_pfam trinotate_in/TrinotatePFAM.out
 Trinotate Trinotate.sqlite LOAD_swissprot_blastx trinotate_in/blastx.uniprot.outfmt6
 Trinotate Trinotate.sqlite LOAD_trembl_blastx trinotate_in/blastx.uniref.outfmt6
-```
-
-```sh
-cat blastx.min1renormdiag.sp*outfmt6 >> blastx.uniref.outfmt6
 ```
 
 # refseq annotation
