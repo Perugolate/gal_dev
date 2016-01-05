@@ -126,7 +126,15 @@ Trinotate Trinotate.sqlite init --gene_trans_map min1renormdiag.fasta.gene_trans
 Trinotate Trinotate.sqlite LOAD_pfam trinotate_in/TrinotatePFAM.out
 Trinotate Trinotate.sqlite LOAD_swissprot_blastx trinotate_in/blastx.uniprot.outfmt6
 Trinotate Trinotate.sqlite LOAD_trembl_blastx trinotate_in/blastx.uniref.outfmt6
-Trinotate Trinotate.sqlite report -E 0.001 > trinotate_annotation_report.xls
+```
+
+```sh
+Trinotate Trinotate.sqlite report -E 0.001 > trinotation.tsv
+extract_GO_assignments_from_Trinotate_xls.pl --Trinotate_xls trinotation.tsv --gene > gos_wide
+```
+```awk
+awk 'BEGIN{OFS="";} { gsub(",","\n"$1,$2); print $0 }' gos_wide |
+awk '{ sub("G","\tG",$0); print $0 }' > gos_long
 ```
 
 # refseq annotation
