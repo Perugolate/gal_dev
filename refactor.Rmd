@@ -28,6 +28,8 @@ library("BiocParallel")
 library("plotrix")
 library("mseapca")
 library("readr")
+library("GOstats")
+library("GSEABase")
 register(MulticoreParam(12)) # use 12 cores.
 ```
 
@@ -268,3 +270,8 @@ select(sigSac, -cluster) %>% gather(stage, exp, -gene) %>% group_by(stage) %>%
   geom_point()
 ```
 
+# GOs
+
+```{r}
+
+```

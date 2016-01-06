@@ -133,8 +133,8 @@ Trinotate Trinotate.sqlite report -E 0.001 > trinotation.tsv
 extract_GO_assignments_from_Trinotate_xls.pl --Trinotate_xls trinotation.tsv --gene > gos_wide
 ```
 ```awk
-awk 'BEGIN{OFS="";} { gsub(",","\n"$1,$2); print $0 }' gos_wide |
-awk '{ sub("G","\tG",$0); print $0 }' > gos_long
+awk 'BEGIN{OFS=""}; { gsub(",","\n"$1,$2); print $0 }' gos_wide |
+awk 'BEGIN{OFS="\t"}; { sub("G","\tIEA\tG",$0); print $3, $2, $1 }' > gos_long
 ```
 
 # refseq annotation
@@ -173,7 +173,6 @@ makeblastdb -in min1renormdiag.2.fasta -dbtype nucl
 for i in {01..21}; do sed "s/refseq_protein.00/refseq_protein.$i/g" trin.00.2.sh > trin.$i.2.sh; done
 for i in trin.[0-2][0-9]*.2.sh; do sbatch $i; done
 ```
-
 
 # *Bombyx mori* orthologs
 
