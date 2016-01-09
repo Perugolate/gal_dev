@@ -273,5 +273,17 @@ select(sigSac, -cluster) %>% gather(stage, exp, -gene) %>% group_by(stage) %>%
 # GOs
 
 ```{r}
-
+gol <- read.table("gos_long", header=FALSE, sep="\t")
+colnames(gol) <- c("frame.go_id","frame.EVIDENCE","frame.gene_id")
+goFrame <- GOFrame(gol)
+goAllFrame <- GOAllFrame(goFrame)
+gsc <- GeneSetCollection(goAllFrame, setType = GOCollection())
+universe <- as.character(gol$frame.gene_id) # this is the all of the GO terms
+goTest <- function(x) {
+    result <- summary(hyperGTest(GSEAGOHyperGParams(name="up",
+                      geneSetCollection=gsc, geneIds=x, universeGeneIds=universe,
+                      ontology="BP", pvalueCutoff=0.05, conditional=TRUE,
+                      testDirection="over")))
+    return(result)
+}
 ```
