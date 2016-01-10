@@ -13,6 +13,7 @@
  * [Cluster in python with sklearn](#cluster-in-python-with-sklearn)
  * [Plot the clusters](#plot-the-clusters)
  * [Plot PCs by stage](#plot-pcs-by-stage)
+- [GOs](#gos)
 
 # Dependencies
 
@@ -167,7 +168,7 @@ write.table(select(devExpCw, -gene), file="genes", quote=FALSE, row.names=FALSE,
 
 ## Cluster in python with sklearn
 
-```{python}
+```python
 import numpy as np
 from sklearn import mixture
 
