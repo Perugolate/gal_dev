@@ -231,7 +231,7 @@ ggplot(pca2sum, aes(x=stage, y=val, group=PC)) + geom_line() +
 
 Determine significantly loading genes.
 ```{r}
-D <- data.frame(rownames(res_rld), select(res_rld, -gene))
+D <- data.frame(rownames(res_rld), dplyr::select(res_rld, -gene))
 A <- pca_scaled(D)
 L <- A[["factor.loading"]]
 colnames(L) <- c("gene", paste("PC", c(1:43), sep=""))
@@ -287,4 +287,5 @@ goTest <- function(x) {
                       testDirection="over")))
     return(result)
 }
+write.table(goTest(down30m), file="cd30m.tsv", sep="\t", quote=FALSE, row.names=FALSE)
 ```
