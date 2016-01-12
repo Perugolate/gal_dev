@@ -253,7 +253,7 @@ rsqll$cluster <- paste(rsqll$pc, rsqll$sign, sep="_")
 wExp <- subset(devExpCw, devExpCw$gene %in% rsqll$gene)
 wExpPca <- merge(dplyr::select(wExp, -cluster), rsqll, by="gene")
 # plot mean expression stage for each cluster.
-dplyr::select(wExpPca, -pc, -loading, -aloading, -sign, -q) %>% 
+dplyr::select(wExpPca, -pc, -loading, -sign, -q) %>% 
   gather(stage, expression, -gene, -cluster) %>% group_by(cluster, stage) %>% 
   summarize(exp=mean(expression), ci=std.error(expression)*1.96) %>% 
   ggplot(aes(x=stage, y=exp, group=cluster)) + geom_line() + 
