@@ -38,9 +38,9 @@ register(MulticoreParam(12)) # use 12 cores.
 
 ```{r}
 # Remove library 34 - contaminated with a yeast library with the same index.
-countData <- read_tsv("gene_counts.tsv.gz", col_names=TRUE) %>% select(-X34)
+countData <- read_tsv("gene_counts.tsv.gz", col_names=TRUE) %>% dplyr::select(-X34)
 rownames(countData) <- countData$gene
-countData <- select(countData, -gene) %>% round
+countData <- dplyr::select(countData, -gene) %>% round
 # No rowSums filter because it eliminates less than 10% rows.
 # Read in sample descriptions and remove library 34 metadata.
 colData <- read_tsv("meta", col_names=TRUE) %>% filter(sample != "X34")
@@ -154,15 +154,15 @@ rsvt <- separate(rsvt, stage, c("sample", "stage"))
 by_genExp <- group_by(rsvt, gene, stage)
 # don't use devExp itself so will replace with a large chain
 devExpCl <- summarize(by_genExp, exp=mean(expression), sd=sd(expression))
-devExpCw <- select(devExpCl, gene, stage, exp) %>% spread(stage, exp) %>%
-  select(gene, one, two, three, five, six, seven)
+devExpCw <- dplyr::select(devExpCl, gene, stage, exp) %>% spread(stage, exp) %>%
+  dplyr::select(gene, one, two, three, five, six, seven)
 # nrow(res_rld)*6 == nrow(devExp) == nrow(devExpCw)*6
 rownames(devExpCw) <- devExpCw$gene
 ```
 
 Write out for clustering in `python` with `scikit-learn` while dropping gene.
 ```{r}
-write.table(select(devExpCw, -gene), file="genes", quote=FALSE, row.names=FALSE,
+write.table(dplyr::select(devExpCw, -gene), file="genes", quote=FALSE, row.names=FALSE,
 	    sep=",")
 ```
 
@@ -212,14 +212,14 @@ ggplot(devExpCl2, aes(x=stage, y=exp, group=cluster)) + geom_line() +
 ## Plot PCs by stage
 
 ```{r}
-pca2 <- prcomp(t(select(res_rld, -gene)), scale=FALSE)
+pca2 <- prcomp(t(dplyr::select(res_rld, -gene)), scale=FALSE)
 pca2x <- as.data.frame(pca2$x)
 # add sensibly ordered stage factor.
 pca2x$stage <- rld@colData@listData$stage
 # determine which PCs to keep from scree plot (here 4).
 plot(pca2$sdev^2, type="b")
 # summarize and then plot each PC by stage
-pca2sum <- select(pca2x, PC1, PC2, PC3, PC4, stage) %>%
+pca2sum <- dplyr::select(pca2x, PC1, PC2, PC3, PC4, stage) %>%
   gather(PC, value, -stage) %>%
   group_by(PC, stage) %>%
   summarize(val=mean(value), ci=std.error(value)*1.96)
@@ -251,9 +251,9 @@ rsqll$sign <- gsub("1", "positive", rsqll$sign)
 rsqll$cluster <- paste(rsqll$pc, rsqll$sign, sep="_")
 # subset the rlogged counts and combine with pca data.
 wExp <- subset(devExpCw, devExpCw$gene %in% rsqll$gene)
-wExpPca <- merge(select(wExp, -cluster), rsqll, by="gene")
+wExpPca <- merge(dplyr::select(wExp, -cluster), rsqll, by="gene")
 # plot mean expression stage for each cluster.
-select(wExpPca, -pc, -loading, -aloading, -sign, -q) %>% 
+dplyr::select(wExpPca, -pc, -loading, -aloading, -sign, -q) %>% 
   gather(stage, expression, -gene, -cluster) %>% group_by(cluster, stage) %>% 
   summarize(exp=mean(expression), ci=std.error(expression)*1.96) %>% 
   ggplot(aes(x=stage, y=exp, group=cluster)) + geom_line() + 
@@ -266,7 +266,7 @@ select(wExpPca, -pc, -loading, -aloading, -sign, -q) %>%
 ```{r}
 df1 <- readLines(pipe("grep Saccharomyces refseq/outfmt6.all.uniq | cut -f1-2 -d'_'"))
 sigSac <- subset(devExpCw, devExpCw$gene %in% df1)
-select(sigSac, -cluster) %>% gather(stage, exp, -gene) %>% group_by(stage) %>% 
+dplyr::select(sigSac, -cluster) %>% gather(stage, exp, -gene) %>% group_by(stage) %>% 
   summarize(expression=mean(exp)) %>% ggplot(aes(x=stage, y=expression)) + 
   geom_point()
 ```
