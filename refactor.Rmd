@@ -289,3 +289,10 @@ goTest <- function(x) {
 }
 write.table(goTest(down30m), file="cd30m.tsv", sep="\t", quote=FALSE, row.names=FALSE)
 ```
+
+
+Plot for grant:
+```{r}
+ggplot(lys, aes(x = stage, y = count)) + geom_point(size = 5, alpha = 0.5) + scale_y_log10(breaks = c(1, 10,100,1000,10000, 100000)) + xlab("Developmental stage") + ylab("Lysozyme gene expression (normalized count)") + scale_x_discrete(labels=c("I", "II", "III", "V", "VI", "VII"))
+```
+
