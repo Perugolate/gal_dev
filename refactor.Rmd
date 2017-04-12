@@ -31,7 +31,6 @@ library("mseapca")
 library("readr")
 library("GOstats")
 library("GSEABase")
-register(MulticoreParam(12)) # use 12 cores.
 ```
 
 # Read data
@@ -58,19 +57,27 @@ colData$batch <- readLines("batch") %>% as.factor
 ```{r}
 dds <- DESeqDataSetFromMatrix(countData = countData, colData = colData, 
 			      design = ~ stage + batch)
-dds <- DESeq(dds, test="LRT", full = ~ stage + batch, reduced = ~ batch, 
-	     parallel=TRUE, fitType="local")
-res <- results(dds, alpha=0.05, tidy=TRUE)
+dds <- DESeq(dds, test = "LRT", full = ~ stage + batch, reduced = ~ batch, 
+	     parallel = TRUE, fitType = "local")
+res <- results(dds, alpha = 0.05, tidy = TRUE)
 ```
 ## Check GALME gene
 
-Check that *p* values for lysozyme GALME gene (Swiss-Prot accession P82174) have not been set to NA. There seems to be a batch effect for early stages that can cause it to be excluded when batch is not fitted.
+There seems to be a batch effect for early stages that can cause lysozyme GALME gene (Swiss-Prot accession P82174) to be excluded when `batch` is not fitted.
+
 ```{r}
-# Get the dispersion outlier data.
-edata <- dds@rowData@elementMetadata %>% as.data.frame 
-rownames(edata) <- rownames(countData)
-subset(edata, rownames(edata) %in% "c86535_g1") # check P82174 is not outlier.
-subset(res, row=="c86535_g1") # check if p value for P82174 is set to NA.
+p82174 <- plotCounts(dds, gene = "c86535_g1", intgroup = c("stage", "batch"),
+		     returnData = TRUE)
+ggplot(p82174, aes(x = stage, y = count, color = batch)) + geom_point(size = 5) +
+       scale_y_log10() + ggtitle("P82174 expression")
+```
+
+![P82174 expression plot]()
+
+So, check that *p* values for P82174 (c86535_g1) have not been set to NA.
+
+```{r}
+subset(res, row == "c86535_g1") # check if p value for P82174 is set to NA.
 ```
 ## Perform contrasts
 
