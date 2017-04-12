@@ -3,16 +3,16 @@
 - [Dependencies](#dependencies)
 - [Read data](#read-data)
 - [Fit model and extract results](#fit-model-and-extract-results)
- * [Check GALME gene](#check-galme-gene)
- * [Perform contrasts](#perform-contrasts)
- * [Subset LRT results using contrast results](#subset-lrt-results-using-contrast-results)
+  - [Check GALME gene](#check-galme-gene)
+  - [Perform contrasts](#perform-contrasts)
+  - [Subset LRT results using contrast results](#subset-lrt-results-using-contrast-results)
 - [Some visualisations](#some-visualisations)
- * [DE gene heatmap](#de-gene-heatmap)
- * [Sample-to-sample heatmap](#sample-to-sample-heatmap)
- * [Munge variance-stabilized results for clustering](#munge-variance-stabilized-results-for-clustering)
- * [Cluster in python with sklearn](#cluster-in-python-with-sklearn)
- * [Plot the clusters](#plot-the-clusters)
- * [Plot PCs by stage](#plot-pcs-by-stage)
+  - [DE gene heatmap](#de-gene-heatmap)
+  - [Sample-to-sample heatmap](#sample-to-sample-heatmap)
+  - [Munge variance-stabilized results for clustering](#munge-variance-stabilized-results-for-clustering)
+  - [Cluster in python with sklearn](#cluster-in-python-with-sklearn)
+  - [Plot the clusters](#plot-the-clusters)
+  - [Plot PCs by stage](#plot-pcs-by-stage)
 - [GOs](#gos)
 
 # Dependencies
@@ -72,7 +72,7 @@ ggplot(p82174, aes(x = stage, y = count, color = batch)) + geom_point(size = 5) 
        scale_y_log10() + ggtitle("P82174 expression")
 ```
 
-![P82174 expression plot]()
+![P82174 expression plot](https://github.com/Perugolate/gal_dev/blob/master/p82174.png)
 
 So, check that *p* values for P82174 (c86535_g1) have not been set to NA.
 
