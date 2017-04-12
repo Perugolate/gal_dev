@@ -17,7 +17,7 @@
 
 # Dependencies
 
-```{r}
+```r
 library("DESeq2")
 library("magrittr")
 library("RColorBrewer")
@@ -35,7 +35,7 @@ library("GSEABase")
 
 # Read data
 
-```{r}
+```r
 # Remove library 34 - contaminated with a yeast library with the same index.
 countData <- read_tsv("gene_counts.tsv.gz", col_names=TRUE) %>% dplyr::select(-X34)
 rownames(countData) <- countData$gene
@@ -54,7 +54,7 @@ colData$batch <- readLines("batch") %>% as.factor
 
 # Fit model and extract results
 
-```{r}
+```r
 dds <- DESeqDataSetFromMatrix(countData = countData, colData = colData, 
 			      design = ~ stage + batch)
 dds <- DESeq(dds, test = "LRT", full = ~ stage + batch, reduced = ~ batch, 
@@ -65,7 +65,7 @@ res <- results(dds, alpha = 0.05, tidy = TRUE)
 
 There seems to be a batch effect for early stages that can cause lysozyme GALME gene (Swiss-Prot accession P82174) to be excluded when `batch` is not fitted.
 
-```{r}
+```r
 p82174 <- plotCounts(dds, gene = "c86535_g1", intgroup = c("stage", "batch"),
 		     returnData = TRUE)
 ggplot(p82174, aes(x = stage, y = count, color = batch)) + geom_point(size = 5) +
@@ -76,22 +76,22 @@ ggplot(p82174, aes(x = stage, y = count, color = batch)) + geom_point(size = 5) 
 
 So, check that *p* values for P82174 (c86535_g1) have not been set to NA.
 
-```{r}
+```r
 subset(res, row == "c86535_g1") # check if p value for P82174 is set to NA.
 ```
 ## Perform contrasts
 
 List IDs of genes which change at least 2-fold from all possible contrasts.
-```{r}
+```r
 # Get significant results from LRT test.
 resSig <- subset(res, padj < 0.05)
 # Create a data frame of all possible contrasts.
 contr <- combn(unique(as.character(colData$stage)), 2) %>% 
-  as.data.frame(stringsAsFactors=FALSE)
+  as.data.frame(stringsAsFactors = FALSE)
 # Take the ids of genes with absolute(log2FoldChanges) > 1 from all contrasts.
 foldchanges <- lapply(names(contr), function(x) {
-  results(dds, alpha=0.05, parallel=TRUE, contrast=c("stage",contr[,x])) %>%
-  subset(abs(log2FoldChange)>1) %>% rownames
+  results(dds, alpha = 0.05, parallel = TRUE, contrast = c("stage",contr[,x])) %>%
+  subset(abs(log2FoldChange) > 1) %>% rownames
 })
 # Concatenate and deduplicate the gene names.
 foldchangesN <- unlist(foldchanges) %>% unique
@@ -100,7 +100,7 @@ foldchangesN <- unlist(foldchanges) %>% unique
 ## Subset LRT results using contrast results
 
 Use ids to find genes which are significant in the LRT test:
-```{r}
+```r
 # Use the gene names to pull out the significant genes from the LRT.
 # Gives genes which have an absolute(log2FoldChanges) > 1 & padj <= 0.05.
 resLfc <- subset(resSig, row %in% foldchangesN)
@@ -109,8 +109,8 @@ resLfc <- subset(resSig, row %in% foldchangesN)
 # Some visualisations
 
 Stabilize variance for clustering and PCA.
-```{r}
-rld <- rlogTransformation(dds, blind=F)
+```r
+rld <- rlogTransformation(dds, blind = FALSE)
 # reorder factor levels for PCA plot legend
 rld@colData@listData$stage <- factor(rld@colData@listData$stage, 
 				     levels=c("one", "two", "three", "five", 
@@ -120,12 +120,18 @@ rld@colData@listData$stage <- factor(rld@colData@listData$stage,
 ## DE gene heatmap
 
 Note `plotPCA` calls prcomp. Scaling makes no difference (I checked) since values are already scaled by the transformation.
-```{r}
+
+```r
 # Use all genes instead of top 500 by row variance.
-plotPCA(rld, ntop=nrow(rld), intgroup="stage")
+plotPCA(rld, ntop = nrow(rld), intgroup = "stage")
+```
+
+![PCA plot](https://github.com/Perugolate/gal_dev/blob/master/pca.png)
+
+```r
 rldMat <- assay(rld)
 distsRL <- dist(t(rldMat))
-hc <- hclust(distsRL, method='mcquitty')
+hc <- hclust(distsRL, method = 'mcquitty')
 # Take the transformed data for genes which are DE.
 res_rld <- subset(rldMat, rownames(rldMat) %in% resLfc$row)
 # Seperate object for heatmap since colnames cause problems later.
@@ -133,23 +139,26 @@ res_rldHm <- res_rld
 colnames(res_rldHm) <- colData$stage
 hmcol <- colorRampPalette(brewer.pal(9, "GnBu"))(100)
 # This is very slow when Rowv=TRUE.
-# Refactor with pheatmap
-heatmap.2(res_rldHm, col=hmcol, Rowv=TRUE, Colv=as.dendrogram(hc), scale="none",
-	  dendrogram="both", trace="none", labRow=FALSE, key=TRUE)
+# Refactor with pheatmap - needs a lot of RAM
+heatmap.2(res_rldHm, col = hmcol, Rowv = TRUE, Colv = as.dendrogram(hc),
+          scale = "none", dendrogram = "both", trace = "none",
+	  labRow = FALSE, key = TRUE)
 ```
 
 ## Sample-to-sample heatmap
 
-```{r}
+```r
 mat <- as.matrix(distsRL)
 rownames(mat) <- colnames(mat) <- colData$stage
-heatmap.2(mat, Rowv=as.dendrogram(hc), symm=TRUE, trace="none", col=rev(hmcol),
-	  margin=c(8, 8))
+heatmap.2(mat, Rowv = as.dendrogram(hc), symm = TRUE, trace = "none", col = rev(hmcol),
+	  margin = c(8, 8))
 ```
+
+![sample-sample heatmap](https://github.com/Perugolate/gal_dev/blob/master/samsam.png)
 
 ## Munge variance-stabilized results for clustering
 
-```{r}
+```r
 res_rld <- as.data.frame(res_rld)
 res_rld$gene <- rownames(res_rld)
 # Add stage information to transformed data.
@@ -168,7 +177,7 @@ rownames(devExpCw) <- devExpCw$gene
 ```
 
 Write out for clustering in `python` with `scikit-learn` while dropping gene.
-```{r}
+```r
 write.table(dplyr::select(devExpCw, -gene), file="genes", quote=FALSE, row.names=FALSE,
 	    sep=",")
 ```
@@ -203,7 +212,7 @@ np.savetxt("labels", labels, fmt="%s")
 
 ## Plot the clusters
 
-```{r}
+```r
 devExpCw$cluster <- scan("labels", what="integer")
 # remove devExpCl above and replace with longer chain straight to devExpCw
 devExpCl2 <- gather(devExpCw, stage, expression, -gene, -cluster) %>% 
@@ -218,7 +227,7 @@ ggplot(devExpCl2, aes(x=stage, y=exp, group=cluster)) + geom_line() +
 
 ## Plot PCs by stage
 
-```{r}
+```r
 pca2 <- prcomp(t(dplyr::select(res_rld, -gene)), scale=FALSE)
 pca2x <- as.data.frame(pca2$x)
 # add sensibly ordered stage factor.
@@ -237,7 +246,7 @@ ggplot(pca2sum, aes(x=stage, y=val, group=PC)) + geom_line() +
 ```
 
 Determine significantly loading genes.
-```{r}
+```r
 D <- data.frame(rownames(res_rld), dplyr::select(res_rld, -gene))
 A <- pca_scaled(D)
 L <- A[["factor.loading"]]
@@ -270,7 +279,7 @@ dplyr::select(wExpPca, -pc, -loading, -sign, -q) %>%
 
 ## Contamination
 
-```{r}
+```r
 df1 <- readLines(pipe("grep Saccharomyces refseq/outfmt6.all.uniq | cut -f1-2 -d'_'"))
 sigSac <- subset(devExpCw, devExpCw$gene %in% df1)
 dplyr::select(sigSac, -cluster) %>% gather(stage, exp, -gene) %>% group_by(stage) %>% 
@@ -280,7 +289,7 @@ dplyr::select(sigSac, -cluster) %>% gather(stage, exp, -gene) %>% group_by(stage
 
 # GOs
 
-```{r}
+```r
 gol <- read.table("gos_long", header=FALSE, sep="\t")
 colnames(gol) <- c("frame.go_id","frame.EVIDENCE","frame.gene_id")
 goFrame <- GOFrame(gol)
@@ -299,7 +308,7 @@ write.table(goTest(down30m), file="cd30m.tsv", sep="\t", quote=FALSE, row.names=
 
 
 Plot for grant:
-```{r}
+```r
 ggplot(lys, aes(x = stage, y = count)) + geom_point(size = 5, alpha = 0.5) + scale_y_log10(breaks = c(1, 10,100,1000,10000, 100000)) + xlab("Developmental stage") + ylab("Lysozyme gene expression (normalized count)") + scale_x_discrete(labels=c("I", "II", "III", "V", "VI", "VII"))
 ```
 
