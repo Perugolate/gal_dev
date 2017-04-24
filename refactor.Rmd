@@ -165,7 +165,12 @@ heatmap.2(mat, Rowv = as.dendrogram(hc), symm = TRUE, trace = "none", col = rev(
 res_rld <- as.data.frame(res_rld)
 res_rld$gene <- rownames(res_rld)
 # Add stage information to transformed data.
-colnames(res_rld) <- c(paste(colData[,1] , colData$stage, sep="_"), "gene")
+colData2 <- colData
+colnames(colData2)[1] <- "sample"
+colData2 <- unite(colData2, sample_stage, sample, stage, remove = FALSE)
+colnames(res_rld) <- colData2$sample_stage
+
+colnames(res_rld) <- c(paste(colData[,1] , colData$stage, sep="_"))
 # Reshape into long format.
 rsvt <- gather(res_rld, stage, expression, -gene)
 rsvt$stage <- as.character(rsvt$stage)
@@ -268,9 +273,10 @@ rsqll$sign <- sign(rsqll$loading)
 rsqll$sign <- gsub("-1", "negative", rsqll$sign)
 rsqll$sign <- gsub("1", "positive", rsqll$sign)
 rsqll$cluster <- paste(rsqll$pc, rsqll$sign, sep="_")
+rsqll$gene <- as.character(rsqll$gene)
 # subset the rlogged counts and combine with pca data.
 wExp <- subset(devExpCw, devExpCw$gene %in% rsqll$gene)
-wExpPca <- merge(dplyr::select(wExp, -cluster), rsqll, by="gene")
+wExpPca <- merge(wExp, rsqll, by = "gene")
 # plot mean expression stage for each cluster.
 dplyr::select(wExpPca, -pc, -loading, -sign, -q) %>% 
   gather(stage, expression, -gene, -cluster) %>% group_by(cluster, stage) %>% 
