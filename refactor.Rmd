@@ -70,7 +70,9 @@ There seems to be a batch effect for early stages that can cause lysozyme GALME 
 p82174 <- plotCounts(dds, gene = "c86535_g1", intgroup = c("stage", "batch"),
 		     returnData = TRUE)
 ggplot(p82174, aes(x = stage, y = count, color = batch)) + geom_point(size = 5) +
-       scale_y_log10() + ggtitle("P82174 expression")
+       scale_y_log10(breaks = c(1, 10,100,1000,10000, 100000)) +
+       xlab("Developmental stage") + ylab("Lysozyme p82174 gene expression (normalized count)") +
+       scale_x_discrete(labels=c("I", "II", "III", "V", "VI", "VII"))
 ```
 
 ![P82174 expression plot](https://github.com/Perugolate/gal_dev/blob/master/p82174.png)
@@ -305,16 +307,5 @@ goTest <- function(x) {
     return(result)
 }
 write.table(goTest(down30m), file="cd30m.tsv", sep="\t", quote=FALSE, row.names=FALSE)
-```
-
-# Miscellaneous
-
-Plot for grant:
-
-```r
-ggplot(lys, aes(x = stage, y = count)) + geom_point(size = 5, alpha = 0.5) +
-       scale_y_log10(breaks = c(1, 10,100,1000,10000, 100000)) +
-       xlab("Developmental stage") + ylab("Lysozyme gene expression (normalized count)") +
-       scale_x_discrete(labels=c("I", "II", "III", "V", "VI", "VII"))
 ```
 
