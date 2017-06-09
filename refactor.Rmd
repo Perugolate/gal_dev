@@ -38,18 +38,19 @@ library("GSEABase")
 
 ```r
 # Remove library 34 - contaminated with a yeast library with the same index.
-countData <- read_tsv("gene_counts.tsv.gz", col_names=TRUE) %>% dplyr::select(-X34)
+countData <- read_tsv("gene_counts.tsv.gz", col_names = TRUE) %>%
+  dplyr::select(-X34)
 rownames(countData) <- countData$gene
 countData <- dplyr::select(countData, -gene) %>% round
 # No rowSums filter because it eliminates less than 10% rows.
 # Read in sample descriptions and remove library 34 metadata.
-colData <- read_tsv("meta", col_names=TRUE) %>% filter(sample != "X34")
+colData <- read_tsv("meta", col_names = TRUE) %>% filter(sample != "X34")
 # Create a factor "stage" with one level for each of six developmental stages.
 colnames(colData) <- c("", "stage")
-colData$stage <- factor(colData$stage, levels=c("one", "two", "three", "five", 
-						"six", "seven"))
+colData$stage <- factor(colData$stage, levels = c("one", "two", "three",
+                                                  "five", "six", "seven"))
 # Re-level so that wandering stage ("one") is the base level.
-colData$stage <- relevel(colData$stage, ref="one")
+colData$stage <- relevel(colData$stage, ref = "one")
 colData$batch <- readLines("batch") %>% as.factor
 ```
 
