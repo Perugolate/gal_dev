@@ -291,7 +291,7 @@ dplyr::select(wExpPca, -pc, -loading, -sign, -q) %>%
 ```r
 df1 <- readLines(pipe("grep Saccharomyces refseq/outfmt6.all.uniq | cut -f1-2 -d'_'"))
 sigSac <- subset(devExpCw, devExpCw$gene %in% df1)
-dplyr::select(sigSac, -cluster) %>% gather(stage, exp, -gene) %>% group_by(stage) %>% 
+gather(sigSac, stage, exp, -gene) %>% group_by(stage) %>% 
   summarize(expression=mean(exp)) %>% ggplot(aes(x=stage, y=expression)) + 
   geom_point()
 ```
