@@ -6,3 +6,4 @@ protein.fa.gz
 Gnomon_prot.fsa
 Gnomon_prot.fsa.gz
 packrat/lib*/
+env
