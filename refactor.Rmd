@@ -63,7 +63,7 @@ dds <- DESeqDataSetFromMatrix(countData = countData, colData = colData,
 			      design = ~ stage + batch)
 dds <- DESeq(dds, test = "LRT", full = ~ stage + batch, reduced = ~ batch, 
 	     parallel = TRUE, fitType = "local")
-res <- results(dds, alpha = 0.05, tidy = TRUE)
+res <- results(dds, alpha = 0.05, tidy = TRUE, filterFun = ihw)
 ```
 ## Check GALME gene
 
@@ -75,7 +75,7 @@ p82174 <- plotCounts(dds, gene = "c86535_g1", intgroup = c("stage", "batch"),
 ggplot(p82174, aes(x = stage, y = count, color = batch)) + geom_point(size = 5) +
        scale_y_log10(breaks = c(1, 10, 100, 1000, 10000, 100000)) +
        xlab("Developmental stage") + ylab("Lysozyme p82174 gene expression (normalized count)") +
-       scale_x_discrete(labels=c("I", "II", "III", "V", "VI", "VII"))
+       scale_x_discrete(labels = c("I", "II", "III", "V", "VI", "VII"))
 ```
 
 ![P82174 expression plot](https://github.com/Perugolate/gal_dev/blob/master/p82174.png)
@@ -96,7 +96,8 @@ contr <- combn(unique(as.character(colData$stage)), 2) %>%
   as.data.frame(stringsAsFactors = FALSE)
 # Take the ids of genes with absolute(log2FoldChanges) > 1 from all contrasts.
 foldchanges <- lapply(names(contr), function(x) {
-  results(dds, alpha = 0.05, parallel = TRUE, contrast = c("stage",contr[,x])) %>%
+  results(dds, alpha = 0.05, filterFun = ihw, parallel = TRUE,
+  contrast = c("stage",contr[,x])) %>%
   subset(abs(log2FoldChange) > 1) %>% rownames
 })
 # Concatenate and deduplicate the gene names.
