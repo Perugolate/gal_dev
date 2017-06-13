@@ -19,17 +19,18 @@
 # Dependencies
 
 ```r
-library("DESeq2")
+library("readr")
 library("magrittr")
+library("dplyr")
+library("DESeq2")
+library("BiocParallel")
+library("IHW")
 library("RColorBrewer")
 library("gplots")
 library("cowplot")
 library("tidyr")
-library("dplyr")
-library("BiocParallel")
 library("plotrix")
 library("mseapca")
-library("readr")
 library("GOstats")
 library("GSEABase")
 library("GenomeInfoDb")
@@ -72,7 +73,7 @@ There seems to be a batch effect for early stages that can cause lysozyme GALME 
 p82174 <- plotCounts(dds, gene = "c86535_g1", intgroup = c("stage", "batch"),
 		     returnData = TRUE)
 ggplot(p82174, aes(x = stage, y = count, color = batch)) + geom_point(size = 5) +
-       scale_y_log10(breaks = c(1, 10,100,1000,10000, 100000)) +
+       scale_y_log10(breaks = c(1, 10, 100, 1000, 10000, 100000)) +
        xlab("Developmental stage") + ylab("Lysozyme p82174 gene expression (normalized count)") +
        scale_x_discrete(labels=c("I", "II", "III", "V", "VI", "VII"))
 ```
