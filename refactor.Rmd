@@ -172,16 +172,16 @@ res_rld$gene <- rownames(res_rld)
 colData2 <- colData
 colnames(colData2)[1] <- "sample"
 colData2 <- unite(colData2, sample_stage, sample, stage, remove = FALSE)
-colnames(res_rld) <- colData2$sample_stage
+colnames(res_rld) <- c(colData2$sample_stage, "gene")
 
-colnames(res_rld) <- c(paste(colData[,1] , colData$stage, sep="_"))
+#colnames(res_rld) <- c(paste(colData[,1] , colData$stage, sep="_"))
 # Reshape into long format.
 rsvt <- gather(res_rld, stage, expression, -gene)
 rsvt$stage <- as.character(rsvt$stage)
 rsvt <- separate(rsvt, stage, c("sample", "stage"))
 by_genExp <- group_by(rsvt, gene, stage)
 # don't use devExp itself so will replace with a large chain
-devExpCl <- summarize(by_genExp, exp=mean(expression), sd=sd(expression))
+devExpCl <- summarize(by_genExp, exp = mean(expression), sd = sd(expression))
 devExpCw <- dplyr::select(devExpCl, gene, stage, exp) %>% spread(stage, exp) %>%
   dplyr::select(gene, one, two, three, five, six, seven)
 # nrow(res_rld)*6 == nrow(devExp) == nrow(devExpCw)*6
@@ -190,8 +190,8 @@ rownames(devExpCw) <- devExpCw$gene
 
 Write out for clustering in `python` with `scikit-learn` while dropping gene.
 ```r
-write.table(dplyr::select(devExpCw, -gene), file="genes", quote=FALSE, row.names=FALSE,
-	    sep=",")
+write.table(dplyr::select(devExpCw, -gene), file = "genes.csv", quote = FALSE,
+            row.names = FALSE, sep = ",")
 ```
 
 ## Cluster in python with sklearn
@@ -201,7 +201,7 @@ import numpy as np
 from sklearn import mixture
 
 # Load data without the headers.
-foo = np.loadtxt(open("genes", "r"), delimiter=",", skiprows=1)
+foo = np.loadtxt(open("genes.csv", "r"), delimiter=",", skiprows=1)
 
 n_components=40 # an upper bound for no. of components.
 lowest_bic = np.infty
@@ -262,16 +262,16 @@ Determine significantly loading genes.
 D <- data.frame(rownames(res_rld), dplyr::select(res_rld, -gene))
 A <- pca_scaled(D)
 L <- A[["factor.loading"]]
-colnames(L) <- c("gene", paste("PC", c(1:43), sep=""))
+colnames(L) <- c("gene", paste("PC", c(1:ncol(L)-1), sep = ""))
 Ll <- gather(L, pc, loading, -gene)
 Q <- A[["q.value"]]
-colnames(Q) <- c("gene", paste("PC", c(1:43), sep=""))
+colnames(Q) <- c("gene", paste("PC", c(1:ncol(L)-1), sep = ""))
 Ql <- gather(Q, pc, q, -gene)
-QLl <- merge(Ql, Ll, by=c("gene", "pc"), all=TRUE)
+QLl <- merge(Ql, Ll, by = c("gene", "pc"), all = TRUE)
 sqll <- filter(QLl, q < 0.05)
 # for each gene keep the highest (absolute) loading which is significant.
 rsqll <- filter(sqll, q < 0.05) %>% group_by(gene) %>% 
-  filter(rev(rank(abs(loading)))==1)
+  filter(rev(rank(abs(loading))) == 1)
 # add column describing cluster.
 rsqll$sign <- sign(rsqll$loading)
 rsqll$sign <- gsub("-1", "negative", rsqll$sign)
