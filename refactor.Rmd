@@ -297,7 +297,7 @@ df1 <- readLines(pipe("grep Saccharomyces refseq/outfmt6.all.uniq | cut -f1-2 -d
 sigSac <- subset(devExpCw, devExpCw$gene %in% df1)
 gather(sigSac, stage, exp, -gene) %>% group_by(stage) %>% 
   summarize(expression=mean(exp)) %>% ggplot(aes(x=stage, y=expression)) + 
-  geom_point()
+  geom_point() + scale_x_discrete(limits=c("one","two","three","five","six","seven"))
 ```
 
 # GOs
@@ -318,4 +318,12 @@ goTest <- function(x) {
 }
 write.table(goTest(down30m), file="cd30m.tsv", sep="\t", quote=FALSE, row.names=FALSE)
 ```
+
+# Orthology
+
+```sh
+# create a matrix of counts
+perl $TRINITY_HOME/util/abundance_estimates_to_matrix.pl --est_method RSEM  --cross_sample_norm none --out_prefix gene rsem/X*
+# filter to retain top isoforms
+perl $TRINITY_HOME/util/filter_low_expr_transcripts2.pl -m gene.TPM.not_cross_norm -t gal_dev.fasta --highest_iso_only --trinity_mode > gal_dev_fil.fasta 
 

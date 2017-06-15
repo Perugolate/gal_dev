@@ -8,3 +8,6 @@ Gnomon_prot.fsa.gz
 packrat/lib*/
 env
 dds.RDS
+gene_counts.tsv
+gal_dev.fasta
+gal_dev_fil.fasta
