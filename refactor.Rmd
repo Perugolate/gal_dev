@@ -262,10 +262,10 @@ Determine significantly loading genes.
 D <- data.frame(rownames(res_rld), dplyr::select(res_rld, -gene))
 A <- pca_scaled(D)
 L <- A[["factor.loading"]]
-colnames(L) <- c("gene", paste("PC", c(1:ncol(L)-1), sep = ""))
+colnames(L) <- c("gene", paste("PC", c(1:(ncol(L)-1)), sep = ""))
 Ll <- gather(L, pc, loading, -gene)
 Q <- A[["q.value"]]
-colnames(Q) <- c("gene", paste("PC", c(1:ncol(L)-1), sep = ""))
+colnames(Q) <- c("gene", paste("PC", c(1:(ncol(L)-1)), sep = ""))
 Ql <- gather(Q, pc, q, -gene)
 QLl <- merge(Ql, Ll, by = c("gene", "pc"), all = TRUE)
 sqll <- filter(QLl, q < 0.05)
