@@ -326,4 +326,13 @@ write.table(goTest(down30m), file="cd30m.tsv", sep="\t", quote=FALSE, row.names=
 perl $TRINITY_HOME/util/abundance_estimates_to_matrix.pl --est_method RSEM  --cross_sample_norm none --out_prefix gene rsem/X*
 # filter to retain top isoforms
 perl $TRINITY_HOME/util/filter_low_expr_transcripts2.pl -m gene.TPM.not_cross_norm -t gal_dev.fasta --highest_iso_only --trinity_mode > gal_dev_fil.fasta 
+# translate the transcripts
+TransDecoder.LongOrfs -m 75 -t gal_dev_fil.fasta
+# prepare orthofinder input
+mkdir ortho && cd ortho
+# needs fasta extensions
+ln -s ../Gnomon_prot.fsa Gnomon_prot.fasta
+ln -s ../gal_dev_fil.fasta.transdecoder_dir/longest_orfs.pep longest_orfs.fasta
+cd ../ && orthofinder -f ortho -t 12
+```
 
