@@ -1,1 +1,0 @@
-../gal_dev_fil.fasta.transdecoder_dir/longest_orfs.pep
