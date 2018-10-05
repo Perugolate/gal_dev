@@ -33,7 +33,7 @@ TransDecoder.LongOrfs -t min1renormdiag.fasta
 #SBATCH --cpus-per-task=8
 cd /scratch/$USER/gal_anno/
 # takes ~1.5 days
-blastx -query min1renormdiag.fasta -db uniprot_sprot.trinotate.pep -num_threads 8 -max_target_seqs 1 -outfmt 6 > blastx.uniprot.outfmt6
+blastx -query min1renormdiag.fasta -db uniprot_sprot.trinotate.pep -num_threads 8 -outfmt 6 > blastx.uniprot.outfmt6
 ```
 
 ## hmmer pfam
@@ -62,7 +62,7 @@ hmmscan --cpu 8 --domtblout TrinotatePFAM.out Pfam-A.hmm longest_orfs.pep > pfam
 #SBATCH --time=7-00:00:00
 #SBATCH --cpus-per-task=12
 cd /scratch/$USER/gal_anno/
-blastx -query min1renormdiag.fasta -db uniprot_uniref90.trinotate.pep -num_threads 12 -max_target_seqs 1 -outfmt 6 > blastx.uniref.outfmt6
+blastx -query min1renormdiag.fasta -db uniprot_uniref90.trinotate.pep -num_threads 12 -outfmt 6 > blastx.uniref.outfmt6
 ```
 
 ### Time outs
@@ -84,7 +84,7 @@ pyfasta split -n 20 min1renormdiag.sp2.fasta
 #SBATCH --time=1-00:00:00
 #SBATCH --cpus-per-task=12
 cd /scratch/$USER/gal_anno/
-blastx -query min1renormdiag.fasta -db uniprot_uniref90.trinotate.pep -num_threads 12 -max_target_seqs 1 -outfmt 6 > blastx.min1renormdiag.fasta.uniref.outfmt6
+blastx -query min1renormdiag.fasta -db uniprot_uniref90.trinotate.pep -num_threads 12 -outfmt 6 > blastx.min1renormdiag.fasta.uniref.outfmt6
 ```
 
 ```sh
@@ -158,7 +158,7 @@ update_blastdb.pl --decompress refseq_protein
 #SBATCH --cpus-per-task=12
 #SBATCH --time=5-00:00:00
 cd /scratch/$USER/gal_anno/
-blastx -query min1renormdiag.fasta -db /scratch/$USER/db2/refseq_protein.00 -num_threads 12 -evalue 1e-3 -max_target_seqs 1 -outfmt "6 qseqid sseqid pident length mismatch gapopen qstart qend sstart send stitle staxids sscinames evalue" -out Trinity.fasta.refseq_protein.00.outfmt6
+blastx -query min1renormdiag.fasta -db /scratch/$USER/db2/refseq_protein.00 -num_threads 12 -evalue 1e-3 -outfmt "6 qseqid sseqid pident length mismatch gapopen qstart qend sstart send stitle staxids sscinames evalue" -out Trinity.fasta.refseq_protein.00.outfmt6
 ```
 
 ```sh
@@ -197,7 +197,7 @@ wget ftp://ftp.ensemblgenomes.org/pub/metazoa/release-30/fasta/bombyx_mori/ncrna
 #SBATCH --cpus-per-task=8
 #SBATCH --time=3-00:00:00
 cd /scratch/$USER/gal_anno/
-blastx -query min1renormdiag.fasta -db /scratch/$USER/gal_anno/silkpep.fa -num_threads 8 -evalue 1e-3 -max_target_seqs 1 -outfmt 6 -out bmori_prot.outfmt6
+blastx -query min1renormdiag.fasta -db /scratch/$USER/gal_anno/silkpep.fa -num_threads 8 -evalue 1e-3 -outfmt 6 -out bmori_prot.outfmt6
 ```
 
 ```sh
@@ -209,7 +209,7 @@ blastx -query min1renormdiag.fasta -db /scratch/$USER/gal_anno/silkpep.fa -num_t
 #SBATCH --cpus-per-task=8
 #SBATCH --time=3-00:00:00
 cd /scratch/$USER/gal_anno/
-tblastn -query silkpep.fa -db /scratch/$USER/gal_anno/min1renormdiag.fasta -num_threads 8 -evalue 1e-3 -max_target_seqs 1 -outfmt 6 -out tbm_prot.outfmt6
+tblastn -query silkpep.fa -db /scratch/$USER/gal_anno/min1renormdiag.fasta -num_threads 8 -evalue 1e-3 -outfmt 6 -out tbm_prot.outfmt6
 ```
 
 ```sh
